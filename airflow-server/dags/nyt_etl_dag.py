@@ -22,7 +22,7 @@ import psycopg2
 # Environment Variables (from Airflow UI)
 NYT_API_KEY = Variable.get("NytApiKey")  # API Key for NYT API
 NEONDB_URI = Variable.get("NeonDBName")  # Database connection URI for NeonDB
-S3_BUCKET = "nytimes-etl"  # Name of the S3 bucket to store raw data
+S3_BUCKET = ""  # Name of the S3 bucket to store raw data
 
 # DAG Definition
 default_args = {
