@@ -1,0 +1,5 @@
+ccxt
+pandas
+apache-airflow[postgres]
+apache-airflow[amazon]
+psycopg2-binary
