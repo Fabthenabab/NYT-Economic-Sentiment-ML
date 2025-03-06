@@ -5,21 +5,23 @@ import pandas as pd
 import numpy as np
 from app.train import load_data, preprocess_data, apply_sentiment_analysis, preprocess_sentiment_scores, split_data_by_label, train_and_predict
 
-@pytest.fixture
-def get_url():
-    url = 'postgresql://nytimesdb_owner:npg_TdyxEgfn1B2q@ep-square-paper-a2oqnwfa-pooler.eu-central-1.aws.neon.tech/nytimesdb?sslmode=require'
-    return url
 
-# Test pour vérifier que les données sont chargées correctement
-def test_load_data(get_url):
-    url = get_url
+# Utiliser le mock au lieu de la base de données
+def test_load_data(monkeypatch, mock_data):
+    # Remplacer la fonction load_data par une version qui retourne les données mock
+    monkeypatch.setattr("app.train.load_data", lambda url: mock_data)
+    
+    url = "postgresql://..."
     df = load_data(url)
     assert isinstance(df, pd.DataFrame)
     assert not df.empty
 
 # Test pour vérifier que le prétraitement des données fonctionne
 def test_preprocess_data(get_url):
-    url = get_url
+    # Remplacer la fonction load_data par une version qui retourne les données mock
+    monkeypatch.setattr("app.train.load_data", lambda url: mock_data)
+    
+    url = "postgresql://..."
     df = load_data(url)
     df_business = preprocess_data(df)
     assert isinstance(df_business, pd.DataFrame)
@@ -28,7 +30,10 @@ def test_preprocess_data(get_url):
 
 # Test pour vérifier que l'analyse de sentiment fonctionne
 def test_apply_sentiment_analysis(get_url):
-    url = get_url
+    # Remplacer la fonction load_data par une version qui retourne les données mock
+    monkeypatch.setattr("app.train.load_data", lambda url: mock_data)
+    
+    url = "postgresql://..."
     df = load_data(url)
     df_business = preprocess_data(df)
     df_SA = apply_sentiment_analysis(df_business)
@@ -38,7 +43,10 @@ def test_apply_sentiment_analysis(get_url):
 
 # Test pour vérifier que les scores de sentiment sont prétraités correctement
 def test_preprocess_sentiment_scores(get_url):
-    url = get_url
+    # Remplacer la fonction load_data par une version qui retourne les données mock
+    monkeypatch.setattr("app.train.load_data", lambda url: mock_data)
+    
+    url = "postgresql://..."
     df = load_data(url)
     df_business = preprocess_data(df)
     df_SA = apply_sentiment_analysis(df_business)
@@ -48,7 +56,10 @@ def test_preprocess_sentiment_scores(get_url):
 
 # Test pour vérifier que les données sont divisées correctement par label
 def test_split_data_by_label(get_url):
-    url = get_url
+    # Remplacer la fonction load_data par une version qui retourne les données mock
+    monkeypatch.setattr("app.train.load_data", lambda url: mock_data)
+    
+    url = "postgresql://..."
     df = load_data(url)
     df_business = preprocess_data(df)
     df_SA = apply_sentiment_analysis(df_business)
