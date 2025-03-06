@@ -1,145 +1,133 @@
+# Library
 import pandas as pd
 import numpy as np
-import mlflow
-import time
-from sklearn.model_selection import train_test_split, GridSearchCV
-from sklearn.preprocessing import StandardScaler
-from sklearn.ensemble import RandomForestRegressor
-from sklearn.pipeline import Pipeline
+from transformers import pipeline
+import matplotlib.pyplot as plt
+from prophet import Prophet
 
-# Load data
+# Fonction pour charger les données
 def load_data(url):
-    """
-    Load dataset from the given URL.
+    df = pd.read_json(url)
+    return df
 
-    Args:
-        url (str): URL to the CSV file.
-
-    Returns:
-        pd.DataFrame: Loaded dataset.
-    """
-    return pd.read_csv(url)
-
-# Preprocess data
+# Fonction pour prétraiter les données
 def preprocess_data(df):
-    """
-    Split the dataframe into X (features) and y (target).
+    df_business = df[(df['section_name'] == 'Business Day')]
+    df_business = df_business.loc[:, ['snippet', 'lead_paragraph', 'pub_date']]
+    df_business['pub_date'] = pd.to_datetime(df_business['pub_date'])
+    df_business['date'] = df_business['pub_date'].dt.strftime('%Y-%m-%d')
+    df_business.drop('pub_date', axis=1, inplace=True)
+    df_business['text'] = df_business['snippet'] + '_' + df_business['lead_paragraph']
+    df_business = df_business.reset_index(drop=True)
+    return df_business
 
-    Args:
-        df (pd.DataFrame): Input dataframe.
+# Fonction pour appliquer l'analyse de sentiment
+def apply_sentiment_analysis(df):
+    pipe = pipeline("text-classification", model="tabularisai/multilingual-sentiment-analysis")
+    data = []
+    for text in df['text']:
+        result = pipe(text)
+        data.append(result[0])  # Ajouter le premier (et seul) dictionnaire
+    df_SA = pd.DataFrame(data)
+    df_SA['date'] = df['date']
+    return df_SA
 
-    Returns:
-        tuple: Split data (X_train, X_test, y_train, y_test).
-    """
-    X = df.iloc[:, :-1]
-    y = df.iloc[:, -1]
-    return train_test_split(X, y, test_size=0.2)
+# Fonction pour prétraiter les scores de sentiment
+def preprocess_sentiment_scores(df_SA):
+    df_mean_scores = df_SA.groupby(['date', 'label'], as_index=False)['score'].mean()
+    df_pivot = df_SA.pivot_table(index='date', columns='label', values='score', aggfunc='mean')
+    df_pivot = df_pivot.fillna(0)
+    return df_pivot
 
-# Create the pipeline
-def create_pipeline():
-    """
-    Create a machine learning pipeline with StandardScaler and RandomForestRegressor.
+# Fonction pour diviser les données en sous-ensembles par label
+def split_data_by_label(df_pivot):
+    df_Very_Negative = df_pivot[['Very Negative']].reset_index()
+    df_Very_Negative.columns = ['ds', 'y']
+    df_Negative = df_pivot[['Negative']].reset_index()
+    df_Negative.columns = ['ds', 'y']
+    df_Neutral = df_pivot[['Neutral']].reset_index()
+    df_Neutral.columns = ['ds', 'y']
+    df_Positive = df_pivot[['Positive']].reset_index()
+    df_Positive.columns = ['ds', 'y']
+    df_Very_Positive = df_pivot[['Very Positive']].reset_index()
+    df_Very_Positive.columns = ['ds', 'y']
+    return df_Very_Negative, df_Negative, df_Neutral, df_Positive, df_Very_Positive
 
-    Returns:
-        Pipeline: A scikit-learn pipeline object.
-    """
-    return Pipeline(steps=[
-        ("standard_scaler", StandardScaler()),
-        ("Random_Forest", RandomForestRegressor())
+# Fonction pour entraîner un modèle Prophet et faire des prédictions
+def train_and_predict(df, label):
+    model = Prophet()
+    model.fit(df)
+    future = model.make_future_dataframe(periods=30)
+    forecast = model.predict(future)
+    forecast['label'] = label
+    return forecast
+
+# Fonction pour visualiser les prédictions
+def plot_forecast(forecast, label):
+    fig, ax = plt.subplots(figsize=(10, 6))
+    ax.plot(forecast['ds'], forecast['yhat'], label='Prédiction', color='blue')
+    ax.fill_between(forecast['ds'], forecast['yhat_lower'], forecast['yhat_upper'], color='lightblue', alpha=0.3, label='Intervalle de confiance')
+    ax.set_title(f'Prédictions pour le label : {label}')
+    ax.set_xlabel('Date')
+    ax.set_ylabel('Valeur prédite')
+    ax.legend()
+    plt.show()
+
+# Fonction pour visualiser toutes les prédictions ensemble
+def plot_all_forecasts(all_forecasts):
+    plt.figure(figsize=(12, 8))
+    for label, group in all_forecasts.groupby('label'):
+        plt.plot(group['ds'], group['yhat'], label=label)
+    plt.title('Prédictions pour tous les labels')
+    plt.xlabel('Date')
+    plt.ylabel('Valeur prédite')
+    plt.legend()
+    plt.show()
+
+# Fonction principale pour exécuter le pipeline
+def main():
+    # Charger les données
+    url = 'https://lead-project-ny-times-ml-ops.s3.eu-west-3.amazonaws.com/df_ny_times.json'
+    df_ny_times = load_data(url)
+    
+    # Prétraiter les données
+    df_business = preprocess_data(df_ny_times)
+    
+    # Appliquer l'analyse de sentiment
+    df_SA_business = apply_sentiment_analysis(df_business)
+    
+    # Prétraiter les scores de sentiment
+    df_pivot = preprocess_sentiment_scores(df_SA_business)
+    
+    # Diviser les données en sous-ensembles par label
+    df_Very_Negative, df_Negative, df_Neutral, df_Positive, df_Very_Positive = split_data_by_label(df_pivot)
+    
+    # Entraîner les modèles et faire des prédictions
+    forecast_Very_Negative = train_and_predict(df_Very_Negative, 'Very Negative')
+    forecast_Negative = train_and_predict(df_Negative, 'Negative')
+    forecast_Neutral = train_and_predict(df_Neutral, 'Neutral')
+    forecast_Positive = train_and_predict(df_Positive, 'Positive')
+    forecast_Very_Positive = train_and_predict(df_Very_Positive, 'Very Positive')
+    
+    # Visualiser les prédictions pour chaque label
+    plot_forecast(forecast_Very_Negative, 'Very Negative')
+    plot_forecast(forecast_Negative, 'Negative')
+    plot_forecast(forecast_Neutral, 'Neutral')
+    plot_forecast(forecast_Positive, 'Positive')
+    plot_forecast(forecast_Very_Positive, 'Very Positive')
+    
+    # Combiner toutes les prédictions
+    all_forecasts = pd.concat([
+        forecast_Very_Negative,
+        forecast_Negative,
+        forecast_Neutral,
+        forecast_Positive,
+        forecast_Very_Positive
     ])
+    
+    # Visualiser toutes les prédictions ensemble
+    plot_all_forecasts(all_forecasts)
 
-# Train model
-def train_model(pipe, X_train, y_train, param_grid, cv=2, n_jobs=-1, verbose=3):
-    """
-    Train the model using GridSearchCV.
-
-    Args:
-        pipe (Pipeline): The pipeline to use for training.
-        X_train (pd.DataFrame): Training features.
-        y_train (pd.Series): Training target.
-        param_grid (dict): The hyperparameter grid to search over.
-        cv (int): Number of cross-validation folds.
-        n_jobs (int): Number of jobs to run in parallel.
-        verbose (int): Verbosity level.
-
-    Returns:
-        GridSearchCV: Trained GridSearchCV object.
-    """
-    model = GridSearchCV(pipe, param_grid, n_jobs=n_jobs, verbose=verbose, cv=cv, scoring="r2")
-    model.fit(X_train, y_train)
-    return model
-
-# Log metrics and model to MLflow
-def log_metrics_and_model(model, X_train, y_train, X_test, y_test, artifact_path, registered_model_name):
-    """
-    Log training and test metrics, and the model to MLflow.
-
-    Args:
-        model (GridSearchCV): The trained model.
-        X_train (pd.DataFrame): Training features.
-        y_train (pd.Series): Training target.
-        X_test (pd.DataFrame): Test features.
-        y_test (pd.Series): Test target.
-        artifact_path (str): Path to store the model artifact.
-        registered_model_name (str): Name to register the model under in MLflow.
-    """
-    mlflow.log_metric("Train Score", model.score(X_train, y_train))
-    mlflow.log_metric("Test Score", model.score(X_test, y_test))
-    mlflow.sklearn.log_model(
-        sk_model=model,
-        artifact_path=artifact_path,
-        registered_model_name=registered_model_name
-    )
-
-# Main function to execute the workflow
-def run_experiment(experiment_name, data_url, param_grid, artifact_path, registered_model_name):
-    """
-    Run the entire ML experiment pipeline.
-
-    Args:
-        experiment_name (str): Name of the MLflow experiment.
-        data_url (str): URL to load the dataset.
-        param_grid (dict): The hyperparameter grid for GridSearchCV.
-        artifact_path (str): Path to store the model artifact.
-        registered_model_name (str): Name to register the model under in MLflow.
-    """
-    # Start timing
-    start_time = time.time()
-
-    # Load and preprocess data
-    df = load_data(data_url)
-    X_train, X_test, y_train, y_test = preprocess_data(df)
-
-    # Create pipeline
-    pipe = create_pipeline()
-
-    # Set experiment's info 
-    mlflow.set_experiment(experiment_name)
-
-    # Get our experiment info
-    experiment = mlflow.get_experiment_by_name(experiment_name)
-
-    # Call mlflow autolog
-    mlflow.sklearn.autolog()
-
-    with mlflow.start_run(experiment_id=experiment.experiment_id):
-        # Train model
-        train_model(pipe, X_train, y_train, param_grid)
-
-    # Print timing
-    print(f"...Training Done! --- Total training time: {time.time() - start_time} seconds")
-
-# Entry point for the script
+# Exécuter le pipeline
 if __name__ == "__main__":
-    # Define experiment parameters
-    experiment_name = "hyperparameter_tuning"
-    data_url = "https://julie-2-next-resources.s3.eu-west-3.amazonaws.com/full-stack-full-time/linear-regression-ft/californian-housing-market-ft/california_housing_market.csv"
-    param_grid = {
-        "Random_Forest__n_estimators": list(range(90, 101, 10)),
-        "Random_Forest__criterion": ["squared_error"]
-    }
-    artifact_path = "modeling_housing_market"
-    registered_model_name = "random_forest"
-
-    # Run the experiment
-    run_experiment(experiment_name, data_url, param_grid, artifact_path, registered_model_name)
+    main()
