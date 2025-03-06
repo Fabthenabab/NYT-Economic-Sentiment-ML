@@ -1,12 +1,16 @@
 pipeline {
     agent any
 
+    environment {
+        DOCKER_IMAGE = 'NYT-Economic-Sentiment-ML'
+    }
+
     stages {
         stage('Checkout') {
             steps {
                 // Checkout the code from the repository
                 git branch: 'main',
-                    url: 'https://github.com/Fabthenabab/NYT-Economic-Sentiment-ML/ml-workflow.git'
+                    url: 'https://github.com/Fabthenabab/NYT-Economic-Sentiment-ML.git'
             }
         }
 
@@ -14,7 +18,33 @@ pipeline {
             steps {
                 script {
                     // Build the Docker image using the Dockerfile
-                    sh 'docker build -t ml-pipeline-image .'
+                    sh 'docker build -t ${DOCKER_IMAGE} .'
+                }
+            }
+        }
+
+        stage('Install Dependencies') {
+            steps {
+                sh 'docker run --rm ${DOCKER_IMAGE} bash -c "pip install -r requirements.txt"'
+            }
+        }
+
+        stage('Run Unit Tests') {
+            steps {
+                script{
+                    sh """
+                    docker run --rm \
+                        -v "/tmp:/test_output" \
+                        -e PYTHONPATH=/app \
+                        ${DOCKER_IMAGE} \
+                        bash -c "pytest --junitxml=/test_output/unit-tests.xml;ls -la /test_output;cp /test_output/unit-tests.xml /tmp/unit-tests.xml"
+                    """
+                    sh 'ls -la /tmp'
+                } 
+            }
+            post {
+                always {
+                    junit '/tmp/unit-tests.xml'  // Publish test results
                 }
             }
         }
