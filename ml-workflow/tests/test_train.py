@@ -2,21 +2,23 @@
 
 import pytest
 import pandas as pd
+import numpy as np
 from app.train import load_data, preprocess_data, apply_sentiment_analysis, preprocess_sentiment_scores, split_data_by_label, train_and_predict
 
 @pytest.fixture
 def get_url():
     url = 'postgresql://nytimesdb_owner:npg_TdyxEgfn1B2q@ep-square-paper-a2oqnwfa-pooler.eu-central-1.aws.neon.tech/nytimesdb?sslmode=require'
     return url
+
 # Test pour vérifier que les données sont chargées correctement
-def test_load_data():
+def test_load_data(get_url):
     url = get_url()
     df = load_data(url)
     assert isinstance(df, pd.DataFrame)
     assert not df.empty
 
 # Test pour vérifier que le prétraitement des données fonctionne
-def test_preprocess_data():
+def test_preprocess_data(get_url):
     url = get_url()
     df = load_data(url)
     df_business = preprocess_data(df)
@@ -25,7 +27,7 @@ def test_preprocess_data():
     assert 'date' in df_business.columns
 
 # Test pour vérifier que l'analyse de sentiment fonctionne
-def test_apply_sentiment_analysis():
+def test_apply_sentiment_analysis(get_url):
     url = get_url()
     df = load_data(url)
     df_business = preprocess_data(df)
@@ -35,7 +37,7 @@ def test_apply_sentiment_analysis():
     assert 'score' in df_SA.columns
 
 # Test pour vérifier que les scores de sentiment sont prétraités correctement
-def test_preprocess_sentiment_scores():
+def test_preprocess_sentiment_scores(get_url):
     url = get_url()
     df = load_data(url)
     df_business = preprocess_data(df)
@@ -45,7 +47,7 @@ def test_preprocess_sentiment_scores():
     assert not df_pivot.empty
 
 # Test pour vérifier que les données sont divisées correctement par label
-def test_split_data_by_label():
+def test_split_data_by_label(get_url):
     url = get_url()
     df = load_data(url)
     df_business = preprocess_data(df)
