@@ -42,11 +42,11 @@ pipeline {
                     sh 'ls -la /tmp'
                 } 
             }
-            post {
+            /*post {
                 always {
                     junit '/tmp/unit-tests.xml'  // Publish test results
                 }
-            }
+            }*/
         }
 
         /*stage('Run Tests Inside Docker Container') {
