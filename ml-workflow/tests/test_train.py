@@ -68,8 +68,10 @@ def test_preprocess_data(mock_ny_times_data):
     assert isinstance(result, pd.DataFrame)
     assert 'text' in result.columns
     assert 'date' in result.columns
-    assert 'snippet' not in result.columns  # Devrait être supprimé
-    assert 'pub_date' not in result.columns  # Devrait être supprimé
+    assert 'snippet' in result.columns  # Ces colonnes sont conservées
+    assert 'lead_paragraph' in result.columns  # Ces colonnes sont conservées
+    assert 'pub_date' not in result.columns  # Celle-ci est supprimée
+    assert 'section_name' not in result.columns  # Celle-ci n'est pas sélectionnée
     assert len(result) == 3  # Seulement les lignes "Business Day"
 
 def test_apply_sentiment_analysis(monkeypatch, mock_business_data):
