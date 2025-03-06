@@ -49,7 +49,7 @@ pipeline {
             }
         }
 
-        '''stage('Run Tests Inside Docker Container') {
+        /*stage('Run Tests Inside Docker Container') {
             steps {
                 withCredentials([
                     string(credentialsId: 'mlflow-tracking-uri', variable: 'MLFLOW_TRACKING_URI'),
@@ -78,7 +78,7 @@ pipeline {
                     '''
                 }
             }
-        }'''
+        }*/
     }
 
     post {
