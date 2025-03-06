@@ -10,6 +10,10 @@ RUN apt install curl -y
 RUN curl -fsSL https://get.deta.dev/cli.sh | sh
 
 COPY . .
+
+# Make requirements.txt accessible in the image
+COPY ml-workflow/requirements.txt /app/requirements.txt
+
 RUN pip install -r requirements.txt
 
 CMD ["python", "app/train.py"]
