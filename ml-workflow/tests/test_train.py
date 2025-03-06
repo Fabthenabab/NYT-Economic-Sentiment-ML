@@ -17,7 +17,7 @@ def test_load_data(monkeypatch, mock_data):
     assert not df.empty
 
 # Test pour vérifier que le prétraitement des données fonctionne
-def test_preprocess_data(get_url):
+def test_preprocess_data(monkeypatch, mock_data):
     # Remplacer la fonction load_data par une version qui retourne les données mock
     monkeypatch.setattr("app.train.load_data", lambda url: mock_data)
     
@@ -29,7 +29,7 @@ def test_preprocess_data(get_url):
     assert 'date' in df_business.columns
 
 # Test pour vérifier que l'analyse de sentiment fonctionne
-def test_apply_sentiment_analysis(get_url):
+def test_apply_sentiment_analysis(monkeypatch, mock_data):
     # Remplacer la fonction load_data par une version qui retourne les données mock
     monkeypatch.setattr("app.train.load_data", lambda url: mock_data)
     
@@ -42,7 +42,7 @@ def test_apply_sentiment_analysis(get_url):
     assert 'score' in df_SA.columns
 
 # Test pour vérifier que les scores de sentiment sont prétraités correctement
-def test_preprocess_sentiment_scores(get_url):
+def test_preprocess_sentiment_scores(monkeypatch, mock_data):
     # Remplacer la fonction load_data par une version qui retourne les données mock
     monkeypatch.setattr("app.train.load_data", lambda url: mock_data)
     
@@ -55,7 +55,7 @@ def test_preprocess_sentiment_scores(get_url):
     assert not df_pivot.empty
 
 # Test pour vérifier que les données sont divisées correctement par label
-def test_split_data_by_label(get_url):
+def test_split_data_by_label(monkeypatch, mock_data):
     # Remplacer la fonction load_data par une version qui retourne les données mock
     monkeypatch.setattr("app.train.load_data", lambda url: mock_data)
     
