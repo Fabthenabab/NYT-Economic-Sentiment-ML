@@ -86,25 +86,19 @@ pipeline {
             // Clean up workspace and remove dangling Docker images
             sh 'docker system prune -f'
         }
-        post {
         success {
-            withCredentials([string(credentialsId: 'slack-webhook-token', variable: 'SLACK_TOKEN')]) {
-                sh """
-                    curl -X POST -H 'Content-type: application/json' \
-                    --data '{"text":"✅ BUILD RÉUSSI: ${env.JOB_NAME} #${env.BUILD_NUMBER}"}' \
-                    ${SLACK_TOKEN}
-                """
-            }
+            sh """
+                curl -X POST -H 'Content-type: application/json' \
+                --data '{"text":"✅ BUILD RÉUSSI: ${env.JOB_NAME} #${env.BUILD_NUMBER}"}' \
+                ${env.SLACK_TOKEN}
+            """
         }
         failure {
-            withCredentials([string(credentialsId: 'slack-webhook-token', variable: 'SLACK_TOKEN')]) {
-                sh """
-                    curl -X POST -H 'Content-type: application/json' \
-                    --data '{"text":"❌ BUILD ÉCHOUÉ: ${env.JOB_NAME} #${env.BUILD_NUMBER}"}' \
-                    ${SLACK_TOKEN}
-                """
-            }
+            sh """
+                curl -X POST -H 'Content-type: application/json' \
+                --data '{"text":"❌ BUILD ÉCHOUÉ: ${env.JOB_NAME} #${env.BUILD_NUMBER}"}' \
+                ${env.SLACK_TOKEN}
+            """
         }
-    }
     }
 }
