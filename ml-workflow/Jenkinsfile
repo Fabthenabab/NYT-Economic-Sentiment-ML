@@ -90,14 +90,14 @@ pipeline {
             sh """
                 curl -X POST -H 'Content-type: application/json' \
                 --data '{"text":"✅ BUILD RÉUSSI: ${env.JOB_NAME} #${env.BUILD_NUMBER}"}' \
-                ${env.SLACK_TOKEN}
+                https://hooks.slack.com/services/${env.SLACK_CREDENTIALS}
             """
         }
         failure {
             sh """
                 curl -X POST -H 'Content-type: application/json' \
                 --data '{"text":"❌ BUILD ÉCHOUÉ: ${env.JOB_NAME} #${env.BUILD_NUMBER}"}' \
-                ${env.SLACK_TOKEN}
+                https://hooks.slack.com/services/${env.SLACK_CREDENTIALS}
             """
         }
     }
