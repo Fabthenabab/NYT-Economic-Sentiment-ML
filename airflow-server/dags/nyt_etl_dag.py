@@ -1,4 +1,4 @@
-""" 
+"""
 ETL DAG for fetching, transforming, and storing NYT Business data in S3 and NeonDB.
 This DAG performs the following tasks:
 1. Fetch raw data from the NYT API and store it in an S3 bucket.
@@ -22,7 +22,7 @@ import psycopg2
 # Environment Variables (from Airflow UI)
 NYT_API_KEY = Variable.get("NytApiKey")  # API Key for NYT API
 NEONDB_URI = Variable.get("NeonDBName")  # Database connection URI for NeonDB
-S3_BUCKET = ""  # Name of the S3 bucket to store raw data
+S3_BUCKET = "nytimes-etl"  # Name of the S3 bucket to store raw data
 
 # DAG Definition
 default_args = {
@@ -38,7 +38,6 @@ dag = DAG(
 )
 
 
-# Fetch and Store Raw Data in S3
 def fetch_and_store_raw_data(**context):
     """Fetches data from the NYT API and stores it in an S3 bucket."""
 
@@ -70,17 +69,9 @@ def fetch_and_store_raw_data(**context):
         logging.info(f"Raw data stored in S3: {raw_filename}")
 
 
-fetch_task = PythonOperator(
-    task_id="fetch_and_store_raw_data",
-    python_callable=fetch_and_store_raw_data,
-    dag=dag,
-)
-
-
-# Transform and Store Processed Data in NeonDB
 def transform_and_store(**context):
     """Downloads raw data from S3, transforms it, and stores it in NeonDB."""
-    
+
     # Retrieve the raw file name from XCom
     s3_key = context["task_instance"].xcom_pull(key="raw_s3_filename")
 
@@ -102,7 +93,8 @@ def transform_and_store(**context):
     cursor = conn.cursor()
 
     # Ensure the target table exists before inserting data
-    cursor.execute("""
+    cursor.execute(
+        """
         CREATE TABLE IF NOT EXISTS nyt_business_articles (
             id SERIAL PRIMARY KEY,
             title TEXT NOT NULL,
@@ -110,9 +102,10 @@ def transform_and_store(**context):
             published_date TIMESTAMP NOT NULL,
             UNIQUE (title, published_date)
         );
-    """)
+    """
+    )
 
-    # ✅ Insert with "ON CONFLICT DO NOTHING" to avoid duplicate key errors
+    # Insert with "ON CONFLICT DO NOTHING" to avoid duplicate key errors
     for _, row in df.iterrows():
         cursor.execute(
             """
@@ -130,6 +123,11 @@ def transform_and_store(**context):
     logging.info("Transformed data stored in NeonDB without duplicates.")
 
 
+fetch_task = PythonOperator(
+    task_id="fetch_and_store_raw_data",
+    python_callable=fetch_and_store_raw_data,
+    dag=dag,
+)
 
 transform_task = PythonOperator(
     task_id="transform_and_store",
@@ -137,7 +135,6 @@ transform_task = PythonOperator(
     dag=dag,
 )
 
-# Ensure Table Exists Before Inserting Data
 create_table = PostgresOperator(
     task_id="create_nyt_table",
     sql="""
@@ -153,7 +150,6 @@ create_table = PostgresOperator(
     dag=dag,
 )
 
-# DAG Flow
 start = DummyOperator(task_id="start", dag=dag)
 end = DummyOperator(task_id="end", dag=dag)
 
