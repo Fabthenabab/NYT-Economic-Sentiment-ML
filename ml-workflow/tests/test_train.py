@@ -2,7 +2,7 @@
 
 import pytest
 import pandas as pd
-from train import load_data, preprocess_data, apply_sentiment_analysis, preprocess_sentiment_scores, split_data_by_label, train_and_predict
+from app.train import load_data, preprocess_data, apply_sentiment_analysis, preprocess_sentiment_scores, split_data_by_label, train_and_predict
 
 @pytest.fixture
 def get_url():
