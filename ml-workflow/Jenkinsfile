@@ -37,7 +37,7 @@ pipeline {
                         -v "/tmp:/test_output" \
                         -e PYTHONPATH=/app \
                         ${DOCKER_IMAGE} \
-                        bash -c "cd /app && pytest tests/ --junitxml=/test_output/unit-tests.xml;ls -la /test_output;cp /test_output/unit-tests.xml /tmp/unit-tests.xml"
+                        bash -c "cd /app && pytest tests/ --junitxml=/test_output/unit-tests.xml;ls -la /test_output;cp /test_output/unit-tests.xml /tmp/unit-tests.xml; cat /tmp/unit-tests.xml"
                     """
                     sh 'ls -la /tmp'
                 } 
