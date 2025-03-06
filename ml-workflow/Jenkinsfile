@@ -89,6 +89,20 @@ pipeline {
         success {
             sh """
             curl -X POST -H 'Content-type: application/json' \
+            --data '{"text":"✅ BUILD RÉUSSI: ${env.JOB_NAME} #${env.BUILD_NUMBER}"}' \
+            ${env.SLACK_WEBHOOK_CNORET}
+        """
+        }
+        failure {
+            sh """
+                curl -X POST -H 'Content-type: application/json' \
+                --data '{"text":"❌ BUILD ÉCHOUÉ: ${env.JOB_NAME} #${env.BUILD_NUMBER}"}' \
+            ${env.SLACK_WEBHOOK_CNORET}
+            """
+        }
+        /*success {
+            sh """
+            curl -X POST -H 'Content-type: application/json' \
             --data '{"text":"✅ BUILD RÉUSSI: ${env.JOB_NAME} #${env.BUILD_NUMBER}", "channel":"${env.SLACK_CHANNEL}"}' \
             ${env.SLACK_WEBHOOK}
         """
@@ -99,6 +113,6 @@ pipeline {
                 --data '{"text":"❌ BUILD ÉCHOUÉ: ${env.JOB_NAME} #${env.BUILD_NUMBER}", "channel":"${env.SLACK_CHANNEL}"}' \
             ${env.SLACK_WEBHOOK}
             """
-        }
+        }*/
     }
 }
