@@ -88,16 +88,16 @@ pipeline {
         }
         success {
             sh """
-                curl -X POST -H 'Content-type: application/json' \
-                --data '{"text":"✅ BUILD RÉUSSI: ${env.JOB_NAME} #${env.BUILD_NUMBER}"}' \
-                https://hooks.slack.com/services/${env.SLACK_CREDENTIALS}
-            """
+            curl -X POST -H 'Content-type: application/json' \
+            --data '{"text":"✅ BUILD RÉUSSI: ${env.JOB_NAME} #${env.BUILD_NUMBER}", "channel":"${env.SLACK_CHANNEL}"}' \
+            ${env.SLACK_WEBHOOK}
+        """
         }
         failure {
             sh """
                 curl -X POST -H 'Content-type: application/json' \
-                --data '{"text":"❌ BUILD ÉCHOUÉ: ${env.JOB_NAME} #${env.BUILD_NUMBER}"}' \
-                https://hooks.slack.com/services/${env.SLACK_CREDENTIALS}
+                --data '{"text":"❌ BUILD ÉCHOUÉ: ${env.JOB_NAME} #${env.BUILD_NUMBER}", "channel":"${env.SLACK_CHANNEL}"}' \
+            ${env.SLACK_WEBHOOK}
             """
         }
     }
