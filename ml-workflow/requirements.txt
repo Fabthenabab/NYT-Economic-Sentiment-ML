@@ -3,3 +3,7 @@ scikit-learn
 pandas
 boto3
 pytest
+numpy
+transformers
+matplotlib
+prophet
