@@ -12,14 +12,14 @@ def get_url():
 
 # Test pour vérifier que les données sont chargées correctement
 def test_load_data(get_url):
-    url = get_url()
+    url = get_url
     df = load_data(url)
     assert isinstance(df, pd.DataFrame)
     assert not df.empty
 
 # Test pour vérifier que le prétraitement des données fonctionne
 def test_preprocess_data(get_url):
-    url = get_url()
+    url = get_url
     df = load_data(url)
     df_business = preprocess_data(df)
     assert isinstance(df_business, pd.DataFrame)
@@ -28,7 +28,7 @@ def test_preprocess_data(get_url):
 
 # Test pour vérifier que l'analyse de sentiment fonctionne
 def test_apply_sentiment_analysis(get_url):
-    url = get_url()
+    url = get_url
     df = load_data(url)
     df_business = preprocess_data(df)
     df_SA = apply_sentiment_analysis(df_business)
@@ -38,7 +38,7 @@ def test_apply_sentiment_analysis(get_url):
 
 # Test pour vérifier que les scores de sentiment sont prétraités correctement
 def test_preprocess_sentiment_scores(get_url):
-    url = get_url()
+    url = get_url
     df = load_data(url)
     df_business = preprocess_data(df)
     df_SA = apply_sentiment_analysis(df_business)
@@ -48,7 +48,7 @@ def test_preprocess_sentiment_scores(get_url):
 
 # Test pour vérifier que les données sont divisées correctement par label
 def test_split_data_by_label(get_url):
-    url = get_url()
+    url = get_url
     df = load_data(url)
     df_business = preprocess_data(df)
     df_SA = apply_sentiment_analysis(df_business)
