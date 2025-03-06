@@ -79,6 +79,24 @@ pipeline {
                 }
             }
         }*/
+        stage('Load Environment') {
+            steps {
+                script {
+                    // Lire le fichier .env et extraire la valeur SLACK_CREDENTIALS
+                    def envFile = readFile('.env').trim()
+                    envFile.split('\n').each { line ->
+                        if (line.startsWith('SLACK_CREDENTIALS=')) {
+                            def value = line.substring('SLACK_CREDENTIALS='.length())
+                            // Supprimer les guillemets s'il y en a
+                            value = value.replaceAll('"', '').replaceAll("'", "")
+                            env.SLACK_CREDENTIALS = value
+                        }
+                    }
+                    
+                    echo "Slack credentials chargés: ${env.SLACK_CREDENTIALS}"
+                }
+            }
+        }
     }
 
     post {
