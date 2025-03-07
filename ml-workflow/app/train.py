@@ -11,7 +11,7 @@ def load_data(url):
     return df
 
 # Fonction pour prétraiter les données
-
+def preprocess_data(df):
     df_business = df[(df['section_name'] == 'Business Day')]
     df_business = df_business.loc[:, ['snippet', 'lead_paragraph', 'pub_date']]
     df_business['pub_date'] = pd.to_datetime(df_business['pub_date'])
