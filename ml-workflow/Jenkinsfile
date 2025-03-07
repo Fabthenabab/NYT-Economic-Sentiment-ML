@@ -86,7 +86,7 @@ pipeline {
             // Clean up workspace and remove dangling Docker images
             sh 'docker system prune -f'
         }
-        success {
+        /*success {
             sh """
             curl -X POST -H 'Content-type: application/json' \
             --data '{"text":"✅ BUILD RÉUSSI: ${env.JOB_NAME} #${env.BUILD_NUMBER}"}' \
@@ -99,8 +99,8 @@ pipeline {
                 --data '{"text":"❌ BUILD ÉCHOUÉ: ${env.JOB_NAME} #${env.BUILD_NUMBER}"}' \
             ${env.SLACK_WEBHOOK_CNORET}
             """
-        }
-        /*success {
+        }*/
+        success {
             sh """
             curl -X POST -H 'Content-type: application/json' \
             --data '{"text":"✅ BUILD RÉUSSI: ${env.JOB_NAME} #${env.BUILD_NUMBER}", "channel":"${env.SLACK_CHANNEL}"}' \
@@ -113,6 +113,6 @@ pipeline {
                 --data '{"text":"❌ BUILD ÉCHOUÉ: ${env.JOB_NAME} #${env.BUILD_NUMBER}", "channel":"${env.SLACK_CHANNEL}"}' \
             ${env.SLACK_WEBHOOK}
             """
-        }*/
+        }
     }
 }
