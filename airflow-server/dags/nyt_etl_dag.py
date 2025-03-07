@@ -24,6 +24,18 @@ NYT_API_KEY = Variable.get("NytApiKey")  # API Key for NYT API
 NEONDB_URI = Variable.get("NeonDBName")  # Database connection URI for NeonDB
 S3_BUCKET = "nytimes-etl"  # Name of the S3 bucket to store raw data
 
+
+# Jenkins Configuration: Load from Airflow Variables
+JENKINS_URL = Variable.get("JENKINS_URL")
+JENKINS_USER = Variable.get("JENKINS_USER")
+JENKINS_TOKEN = Variable.get("JENKINS_TOKEN")
+JENKINS_JOB_NAME = Variable.get("JENKINS_JOB_NAME")
+
+if not all([JENKINS_URL, JENKINS_USER, JENKINS_TOKEN]):
+    raise ValueError("Missing one or more Jenkins configuration environment variables")
+
+
+
 # DAG Definition
 default_args = {
     "owner": "airflow",
@@ -36,6 +48,38 @@ dag = DAG(
     default_args=default_args,
     schedule_interval="@hourly",  # Runs every hour
 )
+
+def poll_jenkins_job():
+    """Poll Jenkins for the job status and check for successful build."""
+    import requests
+    import time
+
+    # Step 1: Get the latest build number from the job API
+    job_url = f"{JENKINS_URL}/job/{JENKINS_JOB_NAME}/api/json"
+    response = requests.get(job_url, auth=(JENKINS_USER, JENKINS_TOKEN))
+    if response.status_code != 200:
+        raise Exception(f"Failed to query Jenkins API: {response.status_code}")
+
+    job_info = response.json()
+    latest_build_number = job_info['lastBuild']['number']
+
+    # Step 2: Poll the latest build's status
+    build_url = f"{JENKINS_URL}/job/{JENKINS_JOB_NAME}/{latest_build_number}/api/json"
+
+    while True:
+        response = requests.get(build_url, auth=(JENKINS_USER, JENKINS_TOKEN))
+        if response.status_code == 200:
+            build_info = response.json()
+            if not build_info['building']:  # Build is finished
+                if build_info['result'] == 'SUCCESS':
+                    print("Jenkins build successful!")
+                    return True
+                else:
+                    raise Exception("Jenkins build failed!")
+        else:
+            raise Exception(f"Failed to query Jenkins API: {response.status_code}")
+        
+        time.sleep(30)  # Poll every 30 seconds
 
 
 def fetch_and_store_raw_data(**context):
@@ -123,6 +167,12 @@ def transform_and_store(**context):
     logging.info("Transformed data stored in NeonDB without duplicates.")
 
 
+jenkins_poll = PythonOperator(
+    task_id="poll_jenkins_job",
+    python_callable=poll_jenkins_job,
+    dag=dag,
+)
+
 fetch_task = PythonOperator(
     task_id="fetch_and_store_raw_data",
     python_callable=fetch_and_store_raw_data,
@@ -153,4 +203,4 @@ create_table = PostgresOperator(
 start = DummyOperator(task_id="start", dag=dag)
 end = DummyOperator(task_id="end", dag=dag)
 
-start >> fetch_task >> create_table >> transform_task >> end
+start >> jenkins_poll >> fetch_task >> create_table >> transform_task >> end
