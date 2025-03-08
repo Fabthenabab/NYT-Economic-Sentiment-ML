@@ -39,9 +39,22 @@ pipeline {
                         ${DOCKER_IMAGE} \
                         bash -c "cd /app && pytest tests/ --junitxml=/test_output/unit-tests.xml;ls -la /test_output;cp /test_output/unit-tests.xml /tmp/unit-tests.xml; cat /tmp/unit-tests.xml"
                     """
-                    sh 'ls -la /tmp'
                 } 
             }
+        
+        stage('Verify Persistence') {
+            steps {
+                script {
+                    // Cette commande crée un nouveau conteneur et vérifie si le fichier unit-tests.xml existe
+                    sh """
+                    docker run --rm \
+                        -v "/tmp:/verification" \
+                        ${DOCKER_IMAGE} \
+                        bash -c "ls -la /verification/unit-tests.xml && echo 'Le fichier persiste entre les steps!' || echo 'Fichier non trouvé'"
+                    """
+                }
+    }
+}
             /*post {
                 always {
                     junit '/tmp/unit-tests.xml'  // Publish test results
